@@ -15,3 +15,8 @@ Here are some examples to get started.
 ## Nesting with Derive
 This example uses derive macros to nest the API documentation (schema)
 and the ordinary Axum Router to set up the paths for serving the API over HTTP.
+
+## Nesting with `OpenApiRouter`
+This example uses the `OpenApiRouter` to nest the API documentation (schema)
+and build the router at the same time.
+Then, it extracts the router and documentation in time for serving.

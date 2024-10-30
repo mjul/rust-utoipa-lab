@@ -6,11 +6,13 @@
 //!
 //! I recommend to stick to one strategy.
 //!
-//! In this example we use the derive macros, and the Axum Router for setting the routes.
+//! In this example we use the Utoipa OpenApiRouter to nest the API documentation
+//! and set up routes at the same time
 
 use axum::routing::get;
 use axum::Router;
 use tower_http::trace::TraceLayer;
+use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(Clone)]
@@ -37,49 +39,51 @@ async fn index() -> &'static str {
 // in Axum to have the exact type inferred by the compiler.
 // Try replacing this with `router() -> Router<AppState>` to see why.
 pub(crate) fn router<S>() -> Router<S> {
-    let api_router = api::router();
-    let api_doc = api::schema();
+    // Here, we build the top-level OpenAPI router under which to mount the API
+    let (api_router, api_doc) = OpenApiRouter::default()
+        .nest("/api", api::openapi_router())
+        .split_for_parts();
 
+    // The routes in that are already relative to the root, so we merge it
+    // rather than nest it (in fact, we could use it directly without the new/merge combination).
     Router::new()
+        .merge(api_router)
         .route_service("/", get(index))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api_doc))
-        .nest("/api", api_router)
         .layer(TraceLayer::new_for_http())
         .with_state(AppState::new())
 }
 
 mod api {
     use super::AppState;
-    use axum::Router;
     use utoipa::OpenApi;
+    use utoipa_axum::router::OpenApiRouter;
 
+    // Note that we do not add the nesting here in the derive macro,
+    // it is set in the openapi_router() below.
+    //
+    //         nest(
+    //             (path="/api/widgets", api=widgets::WidgetsApi)
+    //         )
     #[derive(OpenApi)]
-    #[openapi(
-        info(
-            title = "Nesting with derive macros",
-            description = "This API is built by nesting API docs via the macros"
-        ),
-        nest(
-            (path="/api/widgets", api=widgets::WidgetsApi)
-        ))]
+    #[openapi(info(
+        title = "Nesting with the Utoipa OpenAPI router",
+        description = "This API is built by nesting API docs via the Utoipa OpenAPI Router"
+    ))]
     pub struct ApiDoc;
 
-    /// Return the Axum Router
-    pub(crate) fn router() -> Router<AppState> {
-        Router::new().nest("/widgets", widgets::router())
-    }
-
-    /// Return the OpenAPI schema
-    pub(crate) fn schema() -> utoipa::openapi::OpenApi {
-        ApiDoc::openapi()
+    /// Return the OpenAPI Router with the routes and the OpenAPI schema.
+    pub(crate) fn openapi_router() -> OpenApiRouter<AppState> {
+        OpenApiRouter::with_openapi(ApiDoc::openapi()).nest("/widgets", widgets::openapi_router())
     }
 
     mod widgets {
         use super::AppState;
         use axum::extract::State;
-        use axum::routing::get;
-        use axum::{Json, Router};
+        use axum::Json;
         use utoipa::{OpenApi, ToSchema};
+        use utoipa_axum::router::OpenApiRouter;
+        use utoipa_axum::routes;
 
         #[derive(OpenApi)]
         #[openapi(
@@ -88,8 +92,8 @@ mod api {
         )]
         pub struct WidgetsApi;
 
-        pub(super) fn router() -> Router<AppState> {
-            Router::new().route("/", get(get_widgets))
+        pub(super) fn openapi_router() -> OpenApiRouter<AppState> {
+            OpenApiRouter::new().routes(routes!(get_widgets))
         }
 
         #[derive(ToSchema, serde::Serialize)]
@@ -115,7 +119,9 @@ mod api {
         )]
         async fn get_widgets(State(state): State<AppState>) -> Json<Widgets> {
             let name: String = state.name.clone();
-            Json(Widgets { names: vec![name] })
+            Json(Widgets {
+                names: vec![String::from("Utoipa"), String::from("Axum"), name],
+            })
         }
     }
 }

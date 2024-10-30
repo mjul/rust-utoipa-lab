@@ -1,9 +1,11 @@
 use axum::Router;
 use std::net::SocketAddr;
+use tokio::join;
 use tracing::instrument;
 use tracing_subscriber;
 use tracing_subscriber::{fmt, Layer};
 mod nesting_with_derive;
+mod nesting_with_openapirouter;
 
 #[instrument]
 pub(crate) async fn serve(socket_addr: &SocketAddr, app: Router) {
@@ -26,6 +28,12 @@ async fn main() {
     tracing::subscriber::set_global_default(default_collector)
         .expect("setting default subscriber failed");
 
+    // Run the various examples
     let socket_addr: &SocketAddr = &"127.0.0.1:10000".parse().unwrap();
-    serve(socket_addr, nesting_with_derive::router()).await;
+    let s1 = serve(socket_addr, nesting_with_derive::router());
+    let socket_addr: &SocketAddr = &"127.0.0.1:10001".parse().unwrap();
+    let s2 = serve(socket_addr, nesting_with_openapirouter::router());
+
+    // Wait for the servers to exit
+    join!(s1, s2);
 }
