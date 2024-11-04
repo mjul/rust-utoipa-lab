@@ -4,6 +4,7 @@ use tokio::join;
 use tracing::instrument;
 use tracing_subscriber;
 use tracing_subscriber::{fmt, Layer};
+mod enum_of_js_simple_types;
 mod nesting_with_derive;
 mod nesting_with_openapirouter;
 
@@ -33,7 +34,9 @@ async fn main() {
     let s1 = serve(socket_addr, nesting_with_derive::router());
     let socket_addr: &SocketAddr = &"127.0.0.1:10001".parse().unwrap();
     let s2 = serve(socket_addr, nesting_with_openapirouter::router());
+    let socket_addr: &SocketAddr = &"127.0.0.1:10002".parse().unwrap();
+    let s3 = serve(socket_addr, enum_of_js_simple_types::router());
 
     // Wait for the servers to exit
-    join!(s1, s2);
+    join!(s1, s2, s3);
 }
