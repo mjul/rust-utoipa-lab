@@ -77,6 +77,9 @@ mod api {
         Str(String),
     }
 
+    /// Here the type of the variant is not specified in the output (it is "untagged").
+    /// This is useful for enums that are used as simple types in JavaScript where
+    /// the type of the value specifies the missing tag implicitly (if it is needed).
     #[derive(Serialize, ToSchema)]
     #[serde(untagged)]
     pub enum UntaggedEnum {
