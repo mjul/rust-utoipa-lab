@@ -67,6 +67,7 @@ mod api {
         untagged: Vec<UntaggedEnum>,
         tagged: Vec<TaggedEnum>,
         discriminator: Vec<DiscriminatorEnum>,
+        discriminator_add_type_field: Vec<DiscriminatorAddTypeFieldEnum>,
     }
 
     #[derive(Serialize, ToSchema)]
@@ -114,6 +115,32 @@ mod api {
         Str(String),
     }
 
+    /// This serializes the enum as a map with an additional `type` field as the tag added
+    /// to the map representing its value, *e.g.*
+    ///
+    /// ```json
+    ///   {
+    ///     "_tag": "Foo",
+    ///     "value": 1
+    ///   }
+    ///   ```
+    #[derive(Serialize, ToSchema)]
+    #[serde(tag = "_tag")]
+    pub enum DiscriminatorAddTypeFieldEnum {
+        Foo(FooStruct),
+        Bar(BarStruct),
+    }
+
+    #[derive(Serialize, ToSchema)]
+    pub struct FooStruct {
+        value: i64,
+    }
+
+    #[derive(Serialize, ToSchema)]
+    pub struct BarStruct {
+        value: i64,
+    }
+
     /// Handler function to get enum values.
     #[utoipa::path(
         get,
@@ -138,6 +165,10 @@ mod api {
                 DiscriminatorEnum::Int(123),
                 DiscriminatorEnum::Bool(false),
                 DiscriminatorEnum::Str(String::from("foo")),
+            ],
+            discriminator_add_type_field: vec![
+                DiscriminatorAddTypeFieldEnum::Foo(FooStruct { value: 1 }),
+                DiscriminatorAddTypeFieldEnum::Bar(BarStruct { value: 2 }),
             ],
         })
     }
