@@ -93,7 +93,7 @@ mod api {
     ///       "value": 123
     ///     },
     ///     {
-    ///       "type": "Bool",
+    ///       "type": "Boolean",
     ///       "value": false
     ///     },
     ///     {
@@ -108,8 +108,7 @@ mod api {
         // You can use standard serde notation
         #[serde(rename = "number")]
         Int(i64),
-        // You can also use the utoipa schema notation
-        #[schema(rename = "Boolean")]
+        #[serde(rename = "Boolean")]
         Bool(bool),
         #[serde(rename = "String")]
         Str(String),
