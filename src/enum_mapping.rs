@@ -125,8 +125,12 @@ mod api {
     ///   {
     ///     "_tag": "Foo",
     ///     "value": 1
+    ///   },
+    ///   {
+    ///     "_tag": "Bar",
+    ///     "value": 2
     ///   }
-    ///   ```
+    /// ```
     #[derive(Serialize, ToSchema)]
     #[serde(tag = "_tag")]
     pub enum DiscriminatorAddTypeFieldEnum {
